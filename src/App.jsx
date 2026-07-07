@@ -293,6 +293,13 @@ void sendHeartbeat() {
   }
 }`;
 
+  const isDeviceOnline = () => {
+    if (!deviceStatus?.last_heartbeat) return false;
+    const heartbeatTime = new Date(deviceStatus.last_heartbeat).getTime();
+    return (Date.now() - heartbeatTime) < 60000;
+  };
+  const online = isDeviceOnline();
+
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-security-950 p-4">
@@ -481,11 +488,11 @@ void sendHeartbeat() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-3 bg-security-900 border border-security-800 px-4 py-2.5 rounded-lg text-xs font-semibold">
                 <span className="flex items-center gap-1.5 text-security-300">
-                  <Radio className={`w-4 h-4 ${deviceStatus?.last_heartbeat ? 'text-farm-400 animate-pulse' : 'text-red-500'}`} />
+                  <Radio className={`w-4 h-4 ${online ? 'text-farm-400 animate-pulse' : 'text-red-500'}`} />
                   ESP32 Node:
                 </span>
-                <span className={deviceStatus?.last_heartbeat ? 'text-farm-400' : 'text-red-500'}>
-                  {deviceStatus?.last_heartbeat ? 'ONLINE' : 'OFFLINE'}
+                <span className={online ? 'text-farm-400' : 'text-red-500'}>
+                  {online ? 'ONLINE' : 'OFFLINE'}
                 </span>
                 {deviceStatus?.battery_level !== undefined && (
                   <span className="flex items-center gap-1.5 border-l border-security-800 pl-3 text-security-300">
