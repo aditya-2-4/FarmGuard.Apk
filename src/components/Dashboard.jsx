@@ -138,7 +138,7 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
           </div>
           <div>
             <h3 className="text-sm font-bold text-white mb-1 truncate">
-              {deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never'}
+              {online ? (deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never') : 'N/A'}
             </h3>
             <span className="text-xs text-security-400">
               {online ? 'Device sending telemetry' : 'Heartbeat missing (Offline)'}
