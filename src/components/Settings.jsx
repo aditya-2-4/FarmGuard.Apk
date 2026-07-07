@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings as SettingsIcon, Save, Radio, Phone, Bell, Cpu, Sun, Volume2, Check } from 'lucide-react';
 
-export default function Settings({ token }) {
+export default function Settings({ token, online }) {
   const [phoneNumber, setPhoneNumber] = useState(localStorage.getItem('alert_phone_number') || '+1 (555) 902-1823');
   const [backupPhone, setBackupPhone] = useState(localStorage.getItem('backup_phone_number') || '+1 (555) 902-1824');
   
@@ -37,6 +37,17 @@ export default function Settings({ token }) {
       
       <form onSubmit={handleSaveSettings} className="space-y-6">
         
+        {/* Offline Warning Banner */}
+        {!online && (
+          <div className="bg-yellow-950/40 border border-yellow-700/50 rounded-xl p-4 flex items-start gap-3 shadow-xl">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-yellow-500">Settings Locked (Read-Only Mode)</p>
+              <p className="text-xs text-yellow-200/70">The ESP32 gateway is currently disconnected. You cannot modify hardware behaviors or SMS dispatch rules until the device is back online.</p>
+            </div>
+          </div>
+        )}
+        
         {/* SMS settings panel */}
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-security-850">
@@ -54,7 +65,10 @@ export default function Settings({ token }) {
                 type="text" 
                 value={phoneNumber}
                 onChange={e => setPhoneNumber(e.target.value)}
-                className="w-full bg-security-950 border border-security-700 focus:border-farm-500 rounded-lg px-4 py-2 text-sm text-white placeholder-security-600 outline-none transition-colors"
+                disabled={!online}
+                className={`w-full bg-security-950 border border-security-700 text-sm text-white placeholder-security-600 outline-none transition-colors rounded-lg px-4 py-2 ${
+                  !online ? 'opacity-50 cursor-not-allowed' : 'focus:border-farm-500'
+                }`}
                 placeholder="+1 (555) 000-0000"
                 required
               />
@@ -65,7 +79,10 @@ export default function Settings({ token }) {
                 type="text" 
                 value={backupPhone}
                 onChange={e => setBackupPhone(e.target.value)}
-                className="w-full bg-security-950 border border-security-700 focus:border-farm-500 rounded-lg px-4 py-2 text-sm text-white placeholder-security-600 outline-none transition-colors"
+                disabled={!online}
+                className={`w-full bg-security-950 border border-security-700 text-sm text-white placeholder-security-600 outline-none transition-colors rounded-lg px-4 py-2 ${
+                  !online ? 'opacity-50 cursor-not-allowed' : 'focus:border-farm-500'
+                }`}
                 placeholder="+1 (555) 000-0000"
               />
             </div>
@@ -77,7 +94,8 @@ export default function Settings({ token }) {
                 type="checkbox" 
                 checked={smsStatusToggle}
                 onChange={e => setSmsStatusToggle(e.target.checked)}
-                className="w-4 h-4 accent-farm-500 bg-security-950 border-security-700 rounded focus:ring-0"
+                disabled={!online}
+                className={`w-4 h-4 accent-farm-500 bg-security-950 border-security-700 rounded focus:ring-0 ${!online ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               />
               <span className="text-xs text-security-300 font-semibold">Enable SMS alert dispatches during ARM state</span>
             </label>
@@ -102,12 +120,13 @@ export default function Settings({ token }) {
                   <button
                     key={level}
                     type="button"
+                    disabled={!online}
                     onClick={() => setSirenSensitivity(level)}
                     className={`py-2 px-4 rounded-lg font-bold text-xs uppercase border transition-all ${
                       sirenSensitivity === level 
                         ? 'bg-farm-900/20 border-farm-500 text-white' 
                         : 'bg-security-950 border-security-750 text-security-400 hover:text-white'
-                    }`}
+                    } ${!online ? 'opacity-50 cursor-not-allowed hover:text-security-400' : ''}`}
                   >
                     {level}
                   </button>
@@ -130,7 +149,8 @@ export default function Settings({ token }) {
                   type="checkbox" 
                   checked={nightLighting}
                   onChange={e => setNightLighting(e.target.checked)}
-                  className="w-10 h-5 accent-farm-500 bg-security-950 border-security-700 rounded-full cursor-pointer focus:ring-0"
+                  disabled={!online}
+                  className={`w-10 h-5 accent-farm-500 bg-security-950 border-security-700 rounded-full focus:ring-0 ${!online ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 />
               </label>
             </div>
@@ -171,8 +191,12 @@ export default function Settings({ token }) {
         <div className="flex justify-end pt-2">
           <button
             type="submit"
-            disabled={loading}
-            className="bg-farm-600 hover:bg-farm-500 active:bg-farm-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:shadow-farm-500/20 transition-all flex items-center gap-2 uppercase tracking-wider text-xs"
+            disabled={loading || !online}
+            className={`py-3 px-8 rounded-lg shadow-lg transition-all flex items-center gap-2 uppercase tracking-wider text-xs font-bold ${
+              !online 
+                ? 'bg-security-800 text-security-500 cursor-not-allowed' 
+                : 'bg-farm-600 hover:bg-farm-500 active:bg-farm-700 text-white hover:shadow-farm-500/20'
+            }`}
           >
             {saveSuccess ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             <span>{loading ? 'Saving...' : saveSuccess ? 'Settings Saved!' : 'Save System Settings'}</span>

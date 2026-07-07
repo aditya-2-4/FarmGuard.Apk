@@ -3,7 +3,7 @@ import { Users, UserPlus, Key, Eye, Clock, Trash2, ShieldCheck, AlertTriangle } 
 import { API_URL } from '../config';
 
 
-export default function UserManagement({ token }) {
+export default function UserManagement({ token, online }) {
   const [users, setUsers] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,6 +118,16 @@ export default function UserManagement({ token }) {
             <span className="text-xs text-security-400 font-semibold">{users.length} Enrolled Profiles</span>
           </div>
 
+          {!online && (
+            <div className="mb-4 bg-yellow-950/40 border border-yellow-700/50 rounded-lg p-3 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-yellow-500">Read-Only Mode</p>
+                <p className="text-xs text-yellow-200/70">Connect device to revoke access permissions.</p>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-10 text-security-500">Querying credentials...</div>
           ) : (
@@ -153,8 +163,13 @@ export default function UserManagement({ token }) {
                       <td className="py-3.5 px-4 text-right">
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="p-1.5 bg-security-850 hover:bg-red-950/40 text-security-400 hover:text-red-400 rounded-lg transition-colors"
-                          title="Revoke Permission"
+                          disabled={!online}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            !online 
+                              ? 'bg-security-900 text-security-600 cursor-not-allowed' 
+                              : 'bg-security-850 hover:bg-red-950/40 text-security-400 hover:text-red-400'
+                          }`}
+                          title={!online ? "Device Offline" : "Revoke Permission"}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -218,6 +233,13 @@ export default function UserManagement({ token }) {
 
           <form onSubmit={handleEnrollUser} className="space-y-4">
             
+            {!online && (
+              <div className="bg-yellow-950/40 border border-yellow-700/50 rounded-lg p-3 flex items-start gap-3 mb-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-yellow-200/70">Enrollment disabled while device is offline.</p>
+              </div>
+            )}
+            
             {formError && (
               <div className="bg-red-950/60 border border-red-500/40 text-red-200 px-3.5 py-2.5 rounded-lg text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4.5 h-4.5 text-red-400 shrink-0" />
@@ -239,7 +261,8 @@ export default function UserManagement({ token }) {
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 placeholder="e.g. John Doe"
-                className="w-full bg-security-950 border border-security-700 text-white rounded-lg px-3 py-2 text-xs outline-none focus:border-farm-500"
+                disabled={!online}
+                className={`w-full bg-security-950 border border-security-700 text-white rounded-lg px-3 py-2 text-xs outline-none ${!online ? 'opacity-50 cursor-not-allowed' : 'focus:border-farm-500'}`}
                 required
               />
             </div>
@@ -249,7 +272,8 @@ export default function UserManagement({ token }) {
               <select
                 value={newType}
                 onChange={e => setNewType(e.target.value)}
-                className="w-full bg-security-950 border border-security-700 text-white rounded-lg px-3 py-2 text-xs outline-none focus:border-farm-500"
+                disabled={!online}
+                className={`w-full bg-security-950 border border-security-700 text-white rounded-lg px-3 py-2 text-xs outline-none ${!online ? 'opacity-50 cursor-not-allowed' : 'focus:border-farm-500'}`}
               >
                 <option value="RFID">RFID Tag Key</option>
                 <option value="Face">Face Biometric Profile</option>
@@ -263,7 +287,8 @@ export default function UserManagement({ token }) {
                 value={newIdentifier}
                 onChange={e => setNewIdentifier(e.target.value)}
                 placeholder={newType === 'RFID' ? 'e.g. RFID_A829C' : 'e.g. face_enc_john_...' }
-                className="w-full bg-security-950 border border-security-700 text-white rounded-lg px-3 py-2 text-xs outline-none focus:border-farm-500 font-mono"
+                disabled={!online}
+                className={`w-full bg-security-950 border border-security-700 text-white rounded-lg px-3 py-2 text-xs outline-none font-mono ${!online ? 'opacity-50 cursor-not-allowed' : 'focus:border-farm-500'}`}
                 required
               />
               <p className="text-[10px] text-security-500 mt-1">Unique RFID serial code or Face landmark signature hash.</p>
@@ -271,8 +296,12 @@ export default function UserManagement({ token }) {
 
             <button
               type="submit"
-              disabled={formLoading}
-              className="w-full py-2.5 bg-farm-600 hover:bg-farm-500 text-white rounded-lg font-semibold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 mt-4"
+              disabled={formLoading || !online}
+              className={`w-full py-2.5 rounded-lg font-semibold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 mt-4 ${
+                !online 
+                  ? 'bg-security-800 text-security-500 cursor-not-allowed' 
+                  : 'bg-farm-600 hover:bg-farm-500 text-white'
+              }`}
             >
               <Key className="w-4 h-4" />
               <span>{formLoading ? 'Syncing...' : 'Enroll Credential'}</span>

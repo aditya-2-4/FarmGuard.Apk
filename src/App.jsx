@@ -524,8 +524,8 @@ void sendHeartbeat() {
           {/* Router Content */}
           <div className="flex-1 max-w-[1920px] mx-auto w-full relative h-full min-h-[500px]">
             
-            {/* Global Offline Overlay for all tabs except Dashboard */}
-            {!online && activeTab !== 'dashboard' && (
+            {/* Global Offline Overlay for all tabs except Dashboard, Settings, Users */}
+            {!online && !['dashboard', 'users', 'settings'].includes(activeTab) && (
               <div className="absolute inset-0 z-20 bg-security-950/70 backdrop-blur-md flex flex-col items-center justify-center rounded-2xl border border-security-800">
                 <div className="text-center p-8 bg-security-900 border border-security-700 rounded-2xl shadow-2xl max-w-md animate-fade-in">
                   <div className="mx-auto w-16 h-16 bg-red-950/30 rounded-full flex items-center justify-center mb-4 border border-red-500/30">
@@ -558,9 +558,9 @@ void sendHeartbeat() {
               {activeTab === 'events' && <EventLog token={token} />}
               {activeTab === 'alerts' && <AlertLog token={token} alerts={alerts} fetchAlerts={fetchAlerts} />}
               {activeTab === 'livestockMap' && <LivestockMap token={token} />}
-              {activeTab === 'users' && <UserManagement token={token} />}
+              {activeTab === 'users' && <UserManagement token={token} online={online} />}
               {activeTab === 'zoneConfig' && <ZoneConfig token={token} />}
-              {activeTab === 'settings' && <Settings token={token} />}
+              {activeTab === 'settings' && <Settings token={token} online={online} />}
             </div>
           </div>
         </main>
