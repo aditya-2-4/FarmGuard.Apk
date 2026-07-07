@@ -522,23 +522,46 @@ void sendHeartbeat() {
           </header>
 
           {/* Router Content */}
-          <div className="flex-1 max-w-[1920px] mx-auto w-full">
-            {activeTab === 'dashboard' && (
-              <Dashboard 
-                deviceStatus={deviceStatus} 
-                recentEvents={recentEvents} 
-                alerts={alerts}
-                token={token}
-                fetchDeviceStatus={fetchDeviceStatus}
-              />
+          <div className="flex-1 max-w-[1920px] mx-auto w-full relative h-full min-h-[500px]">
+            
+            {/* Global Offline Overlay for all tabs except Dashboard */}
+            {!online && activeTab !== 'dashboard' && (
+              <div className="absolute inset-0 z-20 bg-security-950/70 backdrop-blur-md flex flex-col items-center justify-center rounded-2xl border border-security-800">
+                <div className="text-center p-8 bg-security-900 border border-security-700 rounded-2xl shadow-2xl max-w-md animate-fade-in">
+                  <div className="mx-auto w-16 h-16 bg-red-950/30 rounded-full flex items-center justify-center mb-4 border border-red-500/30">
+                    <Radio className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">System Offline</h2>
+                  <p className="text-security-400 text-sm leading-relaxed">
+                    Live telemetry, GPS mapping, cameras, and configurations are disabled while the master ESP32 gateway is disconnected.
+                  </p>
+                  <p className="text-security-500 text-xs mt-4 font-mono">
+                    Please reconnect the hardware node to resume monitoring.
+                  </p>
+                </div>
+              </div>
             )}
-            {activeTab === 'liveView' && <LiveView token={token} />}
-            {activeTab === 'events' && <EventLog token={token} />}
-            {activeTab === 'alerts' && <AlertLog token={token} alerts={alerts} fetchAlerts={fetchAlerts} />}
-            {activeTab === 'livestockMap' && <LivestockMap token={token} />}
-            {activeTab === 'users' && <UserManagement token={token} />}
-            {activeTab === 'zoneConfig' && <ZoneConfig token={token} />}
-            {activeTab === 'settings' && <Settings token={token} />}
+
+            {/* Wrapped Content */}
+            <div className={`transition-all duration-500 h-full ${!online && activeTab !== 'dashboard' ? 'opacity-10 pointer-events-none grayscale' : ''}`}>
+              {activeTab === 'dashboard' && (
+                <Dashboard 
+                  deviceStatus={deviceStatus} 
+                  recentEvents={recentEvents} 
+                  alerts={alerts}
+                  token={token}
+                  fetchDeviceStatus={fetchDeviceStatus}
+                  online={online}
+                />
+              )}
+              {activeTab === 'liveView' && <LiveView token={token} />}
+              {activeTab === 'events' && <EventLog token={token} />}
+              {activeTab === 'alerts' && <AlertLog token={token} alerts={alerts} fetchAlerts={fetchAlerts} />}
+              {activeTab === 'livestockMap' && <LivestockMap token={token} />}
+              {activeTab === 'users' && <UserManagement token={token} />}
+              {activeTab === 'zoneConfig' && <ZoneConfig token={token} />}
+              {activeTab === 'settings' && <Settings token={token} />}
+            </div>
           </div>
         </main>
       </div>

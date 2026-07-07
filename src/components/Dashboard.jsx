@@ -6,7 +6,7 @@ import {
 import { API_URL } from '../config';
 
 
-export default function Dashboard({ deviceStatus, recentEvents, alerts, token, fetchDeviceStatus }) {
+export default function Dashboard({ deviceStatus, recentEvents, alerts, token, fetchDeviceStatus, online }) {
   const [toggleLoading, setToggleLoading] = useState(false);
 
   const handleArmToggle = async () => {
@@ -43,13 +43,6 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
     const date = new Date(ts);
     return date.toLocaleTimeString() + ' ' + date.toLocaleDateString();
   };
-
-  const isDeviceOnline = () => {
-    if (!deviceStatus?.last_heartbeat) return false;
-    const heartbeatTime = new Date(deviceStatus.last_heartbeat).getTime();
-    return (Date.now() - heartbeatTime) < 60000;
-  };
-  const online = isDeviceOnline();
 
   return (
     <div className="space-y-8">
