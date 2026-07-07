@@ -16,8 +16,8 @@ export default function LivestockMap({ token }) {
   const polylineRef = useRef(null);
   const geofenceCircleRef = useRef(null);
 
-  // Center of the farm
-  const farmCenter = [38.3245, -122.6512];
+  // Center of the farm (India)
+  const farmCenter = [28.6139, 77.2090];
   const geofenceRadiusMeters = 300; // ~300 meters
 
   useEffect(() => {
