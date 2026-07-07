@@ -72,14 +72,16 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
             </h3>
             <button
               onClick={handleArmToggle}
-              disabled={toggleLoading}
+              disabled={toggleLoading || !online}
               className={`w-full py-2 px-4 rounded-lg font-semibold text-xs tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
-                deviceStatus?.is_armed === 1 
+                !online 
+                  ? 'bg-security-800 text-security-500 cursor-not-allowed border border-security-800'
+                  : deviceStatus?.is_armed === 1 
                   ? 'bg-security-800 hover:bg-security-700 active:bg-security-900 text-security-300 border border-security-700' 
                   : 'bg-farm-600 hover:bg-farm-500 text-white'
               }`}
             >
-              {toggleLoading ? 'Updating...' : (deviceStatus?.is_armed === 1 ? 'Disarm System' : 'Arm System')}
+              {!online ? 'Device Offline' : toggleLoading ? 'Updating...' : (deviceStatus?.is_armed === 1 ? 'Disarm System' : 'Arm System')}
             </button>
           </div>
         </div>
@@ -88,19 +90,21 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Solar Power / Battery</span>
-            <Battery className={`w-6 h-6 ${getBatteryColor(deviceStatus?.battery_level || 0)}`} />
+            <Battery className={`w-6 h-6 ${online ? getBatteryColor(deviceStatus?.battery_level || 0) : 'text-security-600'}`} />
           </div>
           <div>
             <h3 className="text-3xl font-extrabold text-white mb-1">
-              {deviceStatus?.battery_level ?? '--'}%
+              {online && deviceStatus?.battery_level !== undefined ? `${deviceStatus.battery_level}%` : 'N/A'}
             </h3>
             <div className="w-full bg-security-800 h-2 rounded-full overflow-hidden">
               <div 
-                className="bg-farm-500 h-full transition-all duration-500"
-                style={{ width: `${deviceStatus?.battery_level || 0}%` }}
+                className={`h-full transition-all duration-500 ${online ? 'bg-farm-500' : 'bg-security-700'}`}
+                style={{ width: `${online ? (deviceStatus?.battery_level || 0) : 0}%` }}
               ></div>
             </div>
-            <p className="text-[10px] text-security-400 mt-2 font-medium">Solar charging active (12.4V)</p>
+            <p className="text-[10px] text-security-400 mt-2 font-medium">
+              {online ? 'Solar charging active (12.4V)' : 'Device disconnected'}
+            </p>
           </div>
         </div>
 
@@ -108,18 +112,18 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Signal Status</span>
-            <Wifi className="w-6 h-6 text-farm-400" />
+            <Wifi className={`w-6 h-6 ${online ? 'text-farm-400' : 'text-security-600'}`} />
           </div>
           <div>
             <h3 className="text-2xl font-bold text-white mb-1">
-              {deviceStatus?.signal_strength ? `${deviceStatus.signal_strength} / 5 Bars` : '--'}
+              {online && deviceStatus?.signal_strength ? `${deviceStatus.signal_strength} / 5 Bars` : 'No Signal'}
             </h3>
             <div className="flex gap-1 items-end h-4 mt-2">
               {[1, 2, 3, 4, 5].map(bar => (
                 <div 
                   key={bar} 
                   className={`w-1.5 rounded-t transition-all ${
-                    bar <= (deviceStatus?.signal_strength || 0)
+                    online && bar <= (deviceStatus?.signal_strength || 0)
                       ? 'bg-farm-400' 
                       : 'bg-security-800'
                   }`}
@@ -127,7 +131,9 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
                 ></div>
               ))}
             </div>
-            <p className="text-[10px] text-security-400 mt-2 font-medium">GSM SIM online (AT&T Farmnet)</p>
+            <p className="text-[10px] text-security-400 mt-2 font-medium">
+              {online ? 'GSM SIM online (AT&T Farmnet)' : 'Offline'}
+            </p>
           </div>
         </div>
 

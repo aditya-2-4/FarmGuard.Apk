@@ -501,7 +501,7 @@ void sendHeartbeat() {
                 <span className={online ? 'text-farm-400' : 'text-red-500'}>
                   {online ? 'ONLINE' : 'OFFLINE'}
                 </span>
-                {deviceStatus?.battery_level !== undefined && (
+                {online && deviceStatus?.battery_level !== undefined && (
                   <span className="flex items-center gap-1.5 border-l border-security-800 pl-3 text-security-300">
                     <Battery className="w-4 h-4 text-farm-400" />
                     {deviceStatus.battery_level}%
