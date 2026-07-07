@@ -44,6 +44,13 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
     return date.toLocaleTimeString() + ' ' + date.toLocaleDateString();
   };
 
+  const isDeviceOnline = () => {
+    if (!deviceStatus?.last_heartbeat) return false;
+    const heartbeatTime = new Date(deviceStatus.last_heartbeat).getTime();
+    return (Date.now() - heartbeatTime) < 60000;
+  };
+  const online = isDeviceOnline();
+
   return (
     <div className="space-y-8">
       {/* Overview Status Grid Cards */}
@@ -128,18 +135,18 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Last Heartbeat</span>
-            <Clock className="w-6 h-6 text-farm-400" />
+            <Clock className={`w-6 h-6 ${online ? 'text-farm-400' : 'text-red-500'}`} />
           </div>
           <div>
             <h3 className="text-sm font-bold text-white mb-1 truncate">
-              {deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'offline'}
+              {deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never'}
             </h3>
             <span className="text-xs text-security-400">
-              {deviceStatus?.last_heartbeat ? 'Device sending telemetry' : 'Heartbeat missing'}
+              {online ? 'Device sending telemetry' : 'Heartbeat missing (Offline)'}
             </span>
             <div className="flex items-center gap-1.5 mt-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${deviceStatus?.last_heartbeat ? 'bg-farm-400 animate-ping' : 'bg-red-500'}`}></span>
-              <span className="text-[10px] text-security-300 font-semibold">Pulse normal</span>
+              <span className={`w-2.5 h-2.5 rounded-full ${online ? 'bg-farm-400 animate-ping' : 'bg-red-500'}`}></span>
+              <span className="text-[10px] text-security-300 font-semibold">{online ? 'Pulse normal' : 'Disconnected'}</span>
             </div>
           </div>
         </div>
