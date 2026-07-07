@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, ShieldOff, Battery, Wifi, Clock, AlertTriangle, CheckCircle, 
   ArrowRight, Radio, BellRing, Smartphone, Play
@@ -8,6 +8,24 @@ import { API_URL } from '../config';
 
 export default function Dashboard({ deviceStatus, recentEvents, alerts, token, fetchDeviceStatus, online }) {
   const [toggleLoading, setToggleLoading] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!online) {
+      const timer = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [online]);
+
+  const offlineMs = deviceStatus?.last_heartbeat ? (now - new Date(deviceStatus.last_heartbeat).getTime()) : 0;
+  
+  const formatDuration = (ms) => {
+    if (ms < 0) return '0s';
+    const totalSeconds = Math.floor(ms / 1000);
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m > 0 ? m + 'm ' : ''}${s}s`;
+  };
 
   const handleArmToggle = async () => {
     if (toggleLoading || !deviceStatus) return;
@@ -140,12 +158,12 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
             <h3 className="text-sm font-bold text-white mb-1 truncate">
               {deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never'}
             </h3>
-            <span className="text-xs text-security-400">
-              {online ? 'Device sending telemetry' : 'Heartbeat missing (Offline)'}
+            <span className="text-xs text-security-400 block mb-1">
+              {online ? 'Device sending telemetry' : `Offline for ${formatDuration(offlineMs)}`}
             </span>
             <div className="flex items-center gap-1.5 mt-2">
               <span className={`w-2.5 h-2.5 rounded-full ${online ? 'bg-farm-400 animate-ping' : 'bg-red-500'}`}></span>
-              <span className="text-[10px] text-security-300 font-semibold">{online ? 'Pulse normal' : 'Disconnected'}</span>
+              <span className="text-[10px] text-security-300 font-semibold">{online ? 'Connected' : 'Disconnected'}</span>
             </div>
           </div>
         </div>
