@@ -152,8 +152,21 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
 
       </div>
 
-      {/* Grid of recent Event Logs & Alerts logs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Strict Offline Masking for Data Panels */}
+      <div className="relative">
+        {!online && (
+          <div className="absolute inset-0 z-10 bg-security-950/70 backdrop-blur-[6px] rounded-2xl flex flex-col items-center justify-center border border-security-800">
+            <div className="bg-security-900 border border-security-700 p-6 rounded-xl shadow-2xl flex flex-col items-center max-w-sm text-center">
+              <Radio className="w-10 h-10 text-red-500 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Telemetry Offline</h3>
+              <p className="text-xs text-security-400">All data widgets, charts, and activity logs are strictly disabled until the ESP32 gateway reconnects.</p>
+            </div>
+          </div>
+        )}
+
+        <div className={`transition-all ${!online ? 'opacity-30 pointer-events-none select-none filter grayscale' : ''}`}>
+          {/* Grid of recent Event Logs & Alerts logs */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Recent Security Activity Panel */}
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl">
@@ -266,6 +279,8 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
           </div>
         </div>
 
+          </div>
+        </div>
       </div>
     </div>
   );
