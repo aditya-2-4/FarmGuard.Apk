@@ -53,7 +53,7 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-security-400">System State</span>
-            {deviceStatus?.is_armed === 1 ? (
+            {online && deviceStatus?.is_armed === 1 ? (
               <Shield className="w-6 h-6 text-farm-400" />
             ) : (
               <ShieldOff className="w-6 h-6 text-security-500" />
@@ -61,7 +61,7 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
           </div>
           <div>
             <h3 className="text-2xl font-bold text-white mb-2">
-              {deviceStatus?.is_armed === 1 ? 'Armed' : 'Disarmed'}
+              {online && deviceStatus?.is_armed === 1 ? 'Armed' : 'Disarmed'}
             </h3>
             <button
               onClick={handleArmToggle}
