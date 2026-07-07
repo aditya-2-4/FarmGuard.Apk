@@ -293,10 +293,17 @@ void sendHeartbeat() {
   }
 }`;
 
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   const isDeviceOnline = () => {
     if (!deviceStatus?.last_heartbeat) return false;
     const heartbeatTime = new Date(deviceStatus.last_heartbeat).getTime();
-    return (Date.now() - heartbeatTime) < 60000;
+    return (currentTime - heartbeatTime) < 60000;
   };
   const online = isDeviceOnline();
 
