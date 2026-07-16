@@ -11,6 +11,9 @@ import LivestockMap from './components/LivestockMap';
 import UserManagement from './components/UserManagement';
 import ZoneConfig from './components/ZoneConfig';
 import Settings from './components/Settings';
+import FaceManagement from './components/FaceManagement';
+import RFIDManagement from './components/RFIDManagement';
+import AttendanceLog from './components/AttendanceLog';
 import { API_URL, WS_URL } from './config';
 
 
@@ -158,6 +161,30 @@ export default function App() {
         fetchAlerts();
       }
 
+      if (msg.type === 'FACE_RECOGNIZED' || msg.type === 'RFID_SCANNED' || msg.type === 'UNKNOWN_FACE') {
+        // Add to recent events feed
+        setRecentEvents(prev => [{
+          id: msg.log.id || Date.now(),
+          detection_type: msg.type === 'UNKNOWN_FACE' ? 'Unknown Person' : (msg.type === 'FACE_RECOGNIZED' ? 'Face Recognized' : 'RFID Scanned'),
+          zone_name: 'ESP32 Access Point',
+          timestamp: msg.log.timestamp,
+          is_recognized: msg.type !== 'UNKNOWN_FACE',
+          person_name: msg.log.person_name,
+          media_path: msg.log.image_path || null
+        }, ...prev.slice(0, 9)]);
+
+        if (msg.type === 'UNKNOWN_FACE') {
+          setActiveIntrusion(true);
+          setActiveIntrusionDetails({
+            timestamp: msg.log.timestamp,
+            detection_type: 'Unknown Face Detected',
+            zone_name: 'ESP32 Camera Node',
+            media_path: msg.log.image_path
+          });
+          playBuzzer();
+        }
+      }
+
       if (msg.type === 'GEOFENCE_BREACH') {
         setActiveIntrusion(true);
         setActiveIntrusionDetails({
@@ -227,7 +254,10 @@ export default function App() {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Shield },
-    { id: 'liveView', label: 'Live View', icon: Camera },
+    { id: 'liveView', label: 'Live Camera', icon: Camera },
+    { id: 'faces', label: 'Face Management', icon: Users },
+    { id: 'rfid', label: 'RFID Management', icon: Key },
+    { id: 'attendance', label: 'Attendance Log', icon: Database },
     { id: 'events', label: 'Event Log', icon: Database },
     { id: 'alerts', label: 'SMS & Alerts', icon: Bell },
     { id: 'livestockMap', label: 'Livestock GPS', icon: Map },
@@ -555,6 +585,9 @@ void sendHeartbeat() {
                 />
               )}
               {activeTab === 'liveView' && <LiveView token={token} />}
+              {activeTab === 'faces' && <FaceManagement token={token} />}
+              {activeTab === 'rfid' && <RFIDManagement token={token} />}
+              {activeTab === 'attendance' && <AttendanceLog token={token} />}
               {activeTab === 'events' && <EventLog token={token} />}
               {activeTab === 'alerts' && <AlertLog token={token} alerts={alerts} fetchAlerts={fetchAlerts} />}
               {activeTab === 'livestockMap' && <LivestockMap token={token} />}

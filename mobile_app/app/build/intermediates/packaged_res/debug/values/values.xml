@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FarmGuard</string>
+    <style name="Theme.FarmGuard" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#2e854e</item>
+    </style>
+</resources>
