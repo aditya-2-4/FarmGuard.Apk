@@ -1,57 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Users, Key, AlertTriangle, Camera, CheckCircle, Clock, 
-  Activity, Shield, ShieldAlert, Radio
+  Shield, ShieldOff, Battery, Wifi, Clock, AlertTriangle, CheckCircle, 
+  ArrowRight, Radio, BellRing, Smartphone, Play
 } from 'lucide-react';
 import { API_URL } from '../config';
 
-export default function Dashboard({ deviceStatus, recentEvents, token, online }) {
-  const [stats, setStats] = useState({
-    faces: 0,
-    rfid: 0,
-    unknown: 0,
-    totalAttendance: 0
-  });
 
-  const [attendance, setAttendance] = useState([]);
-  
-  useEffect(() => {
-    fetchStats();
-  }, [token]);
+export default function Dashboard({ deviceStatus, recentEvents, alerts, token, fetchDeviceStatus, online }) {
+  const [toggleLoading, setToggleLoading] = useState(false);
 
-  const fetchStats = async () => {
+  const handleArmToggle = async () => {
+    if (toggleLoading || !deviceStatus) return;
+    setToggleLoading(true);
     try {
-      const [facesRes, rfidRes, attendanceRes] = await Promise.all([
-        fetch(`${API_URL}/api/faces`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_URL}/api/rfid`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_URL}/api/attendance`, { headers: { 'Authorization': `Bearer ${token}` } })
-      ]);
-      
-      let facesCount = 0, rfidCount = 0, unknownCount = 0, attendList = [];
-      
-      if (facesRes.ok) {
-        const faces = await facesRes.json();
-        facesCount = faces.length;
-      }
-      if (rfidRes.ok) {
-        const rfids = await rfidRes.json();
-        rfidCount = rfids.length;
-      }
-      if (attendanceRes.ok) {
-        attendList = await attendanceRes.json();
-        unknownCount = attendList.filter(a => a.person_name === 'Unknown').length;
-      }
-
-      setStats({
-        faces: facesCount,
-        rfid: rfidCount,
-        unknown: unknownCount,
-        totalAttendance: attendList.length
+      const nextState = deviceStatus.is_armed === 1 ? false : true;
+      const res = await fetch(`${API_URL}/api/device/arm-toggle`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_armed: nextState })
       });
-      setAttendance(attendList.slice(0, 10)); // Just recent for feed
+      if (res.ok) {
+        await fetchDeviceStatus();
+      }
     } catch (e) {
-      console.error('Error fetching dashboard stats:', e);
+      console.error(e);
+    } finally {
+      setToggleLoading(false);
     }
+  };
+
+  const getBatteryColor = (level) => {
+    if (level > 50) return 'text-farm-400';
+    if (level > 20) return 'text-yellow-500';
+    return 'text-red-500 animate-pulse';
+  };
+
+  const formatTime = (ts) => {
+    if (!ts) return 'Never';
+    const date = new Date(ts);
+    return date.toLocaleTimeString() + ' ' + date.toLocaleDateString();
   };
 
   return (
@@ -59,128 +49,238 @@ export default function Dashboard({ deviceStatus, recentEvents, token, online })
       {/* Overview Status Grid Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Registered Faces Card */}
-        <div className="bg-[#121a14] border border-gray-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
+        {/* Arm State Card */}
+        <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Registered Faces</span>
-            <Users className="w-6 h-6 text-emerald-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-security-400">System State</span>
+            {online && deviceStatus?.is_armed === 1 ? (
+              <Shield className="w-6 h-6 text-farm-400" />
+            ) : (
+              <ShieldOff className="w-6 h-6 text-security-500" />
+            )}
           </div>
           <div>
-            <h3 className="text-3xl font-extrabold text-white mb-1">{stats.faces}</h3>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Total active face profiles</p>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              {online && deviceStatus?.is_armed === 1 ? 'Armed' : 'Disarmed'}
+            </h3>
+            <button
+              onClick={handleArmToggle}
+              disabled={toggleLoading || !online}
+              className={`w-full py-2 px-4 rounded-lg font-semibold text-xs tracking-wider uppercase transition-colors flex items-center justify-center gap-2 ${
+                !online 
+                  ? 'bg-security-800 text-security-500 cursor-not-allowed border border-security-800'
+                  : deviceStatus?.is_armed === 1 
+                  ? 'bg-security-800 hover:bg-security-700 active:bg-security-900 text-security-300 border border-security-700' 
+                  : 'bg-farm-600 hover:bg-farm-500 text-white'
+              }`}
+            >
+              {!online ? 'Device Offline' : toggleLoading ? 'Updating...' : (deviceStatus?.is_armed === 1 ? 'Disarm System' : 'Arm System')}
+            </button>
           </div>
         </div>
 
-        {/* Active RFID Cards Card */}
-        <div className="bg-[#121a14] border border-gray-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
+        {/* Battery Level Card */}
+        <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Active RFID Cards</span>
-            <Key className="w-6 h-6 text-blue-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Solar Power / Battery</span>
+            <Battery className={`w-6 h-6 ${online ? getBatteryColor(deviceStatus?.battery_level || 0) : 'text-security-600'}`} />
           </div>
           <div>
-            <h3 className="text-3xl font-extrabold text-white mb-1">{stats.rfid}</h3>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Total registered RFID tags</p>
+            <h3 className="text-3xl font-extrabold text-white mb-1">
+              {online && deviceStatus?.battery_level !== undefined ? `${deviceStatus.battery_level}%` : 'N/A'}
+            </h3>
+            <div className="w-full bg-security-800 h-2 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 ${online ? 'bg-farm-500' : 'bg-security-700'}`}
+                style={{ width: `${online ? (deviceStatus?.battery_level || 0) : 0}%` }}
+              ></div>
+            </div>
+            <p className="text-[10px] text-security-400 mt-2 font-medium">
+              {online ? 'Solar charging active (12.4V)' : 'Device disconnected'}
+            </p>
           </div>
         </div>
 
-        {/* Unknown Faces Card */}
-        <div className="bg-[#121a14] border border-gray-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
+        {/* Connection Quality Card */}
+        <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Unknown Face Alerts</span>
-            <AlertTriangle className="w-6 h-6 text-red-500" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Signal Status</span>
+            <Wifi className={`w-6 h-6 ${online ? 'text-farm-400' : 'text-security-600'}`} />
           </div>
           <div>
-            <h3 className="text-3xl font-extrabold text-white mb-1">{stats.unknown}</h3>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Total unrecognized attempts</p>
+            <h3 className="text-2xl font-bold text-white mb-1">
+              {online && deviceStatus?.signal_strength ? `${deviceStatus.signal_strength} / 5 Bars` : 'No Signal'}
+            </h3>
+            <div className="flex gap-1 items-end h-4 mt-2">
+              {[1, 2, 3, 4, 5].map(bar => (
+                <div 
+                  key={bar} 
+                  className={`w-1.5 rounded-t transition-all ${
+                    online && bar <= (deviceStatus?.signal_strength || 0)
+                      ? 'bg-farm-400' 
+                      : 'bg-security-800'
+                  }`}
+                  style={{ height: `${bar * 20}%` }}
+                ></div>
+              ))}
+            </div>
+            <p className="text-[10px] text-security-400 mt-2 font-medium">
+              {online ? 'GSM SIM online (AT&T Farmnet)' : 'Offline'}
+            </p>
           </div>
         </div>
 
-        {/* Camera Status Card */}
-        <div className="bg-[#121a14] border border-gray-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
+        {/* Heartbeat Status Card */}
+        <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Camera Status</span>
-            <Camera className={`w-6 h-6 ${online ? 'text-emerald-400 animate-pulse' : 'text-gray-600'}`} />
+            <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Last Heartbeat</span>
+            <Clock className={`w-6 h-6 ${online ? 'text-farm-400' : 'text-red-500'}`} />
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-white mb-1">{online ? 'ONLINE' : 'OFFLINE'}</h3>
+            <h3 className="text-sm font-bold text-white mb-1 truncate">
+              {online ? (deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never') : 'N/A'}
+            </h3>
+            <span className="text-xs text-security-400">
+              {online ? 'Device sending telemetry' : 'Heartbeat missing (Offline)'}
+            </span>
             <div className="flex items-center gap-1.5 mt-2">
-              <span className={`w-2 h-2 rounded-full ${online ? 'bg-emerald-400' : 'bg-red-500'}`}></span>
-              <span className="text-[10px] text-gray-400 font-semibold uppercase">
-                {online ? 'ESP32 Streaming' : 'Connection Lost'}
-              </span>
+              <span className={`w-2.5 h-2.5 rounded-full ${online ? 'bg-farm-400 animate-ping' : 'bg-red-500'}`}></span>
+              <span className="text-[10px] text-security-300 font-semibold">{online ? 'Connected' : 'Disconnected'}</span>
             </div>
           </div>
         </div>
+
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Strict Offline Masking for Data Panels */}
+      <div className="relative">
+        {!online && (
+          <div className="absolute inset-0 z-10 bg-security-950/70 backdrop-blur-[6px] rounded-2xl flex flex-col items-center justify-center border border-security-800">
+            <div className="bg-security-900 border border-security-700 p-6 rounded-xl shadow-2xl flex flex-col items-center max-w-sm text-center">
+              <Radio className="w-10 h-10 text-red-500 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Telemetry Offline</h3>
+              <p className="text-xs text-security-400">All data widgets, charts, and activity logs are strictly disabled until the ESP32 gateway reconnects.</p>
+            </div>
+          </div>
+        )}
+
+        <div className={`transition-all ${!online ? 'opacity-30 pointer-events-none select-none filter grayscale' : ''}`}>
+          {/* Grid of recent Event Logs & Alerts logs */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Simple Data Analysis Chart Panel (Placeholder via CSS styling) */}
-        <div className="lg:col-span-2 bg-[#121a14] border border-gray-800 rounded-xl p-6 shadow-xl flex flex-col">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
+        {/* Recent Security Activity Panel */}
+        <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-security-800">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-400" />
-              <span>Recognition Activity Overview</span>
+              <Radio className="w-5 h-5 text-farm-400" />
+              <span>Recent Activity Feed</span>
             </h3>
-            <span className="text-xs text-emerald-400 font-semibold">Last 7 Days</span>
-          </div>
-          
-          <div className="flex-1 flex items-end justify-between gap-2 pt-4 px-2 h-64">
-            {/* Minimalist CSS bar chart representing activity */}
-            {[45, 60, 30, 80, 55, 90, 70].map((height, i) => (
-              <div key={i} className="flex flex-col items-center w-full gap-2">
-                <div className="w-full relative h-full flex items-end rounded overflow-hidden">
-                  <div 
-                    className="w-full bg-emerald-500/80 rounded-t-sm hover:bg-emerald-400 transition-colors"
-                    style={{ height: `${height}%` }}
-                  ></div>
-                </div>
-                <span className="text-[10px] text-gray-500 font-medium">Day {i+1}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Live Activity Feed */}
-        <div className="bg-[#121a14] border border-gray-800 rounded-xl p-6 shadow-xl flex flex-col h-96 lg:h-auto">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
-              <span>Live Activity Feed</span>
-            </h3>
+            <span className="text-xs text-farm-400 font-semibold">Live updates</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-            {attendance.length > 0 ? attendance.map((log) => (
-              <div key={log.id} className={`p-3 rounded-lg flex items-start justify-between border ${
-                log.person_name === 'Unknown' ? 'bg-red-500/10 border-red-500/20' : 'bg-[#1a241c] border-gray-800'
-              }`}>
-                <div className="flex gap-3">
-                  <div className={`mt-0.5 p-2 rounded-full ${
-                    log.person_name === 'Unknown' ? 'bg-red-500/20 text-red-400' : 
-                    log.method === 'Face' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+          <div className="space-y-4">
+            {recentEvents.slice(0, 4).map(event => (
+              <div 
+                key={event.id}
+                className={`p-4 rounded-lg flex items-center justify-between border ${
+                  event.detection_type === 'Human Detected' && event.is_recognized === 0
+                    ? 'bg-red-950/20 border-red-500/30'
+                    : 'bg-security-950/60 border-security-850'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-full ${
+                    event.detection_type === 'Human Detected' && event.is_recognized === 0
+                      ? 'bg-red-900/40 text-red-400'
+                      : event.detection_type === 'Recognized Owner'
+                      ? 'bg-farm-900/40 text-farm-400'
+                      : 'bg-security-800 text-security-400'
                   }`}>
-                    {log.person_name === 'Unknown' ? <ShieldAlert size={16}/> : log.method === 'Face' ? <Camera size={16}/> : <Key size={16}/>}
+                    {event.detection_type === 'Human Detected' && event.is_recognized === 0 ? (
+                      <AlertTriangle className="w-5 h-5" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5" />
+                    )}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">
-                      {log.person_name === 'Unknown' ? 'Unknown Person Detected' : `${log.person_name} Authenticated`}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                      <Clock size={12} /> {new Date(log.timestamp).toLocaleTimeString()} via {log.method}
-                    </p>
+                    <p className="text-sm font-bold text-white">{event.detection_type}</p>
+                    <p className="text-xs text-security-400 mt-0.5">Zone: {event.zone_name} • {formatTime(event.timestamp)}</p>
                   </div>
                 </div>
+
+                {event.media_path && (
+                  <div className="w-12 h-12 bg-security-900 border border-security-800 rounded overflow-hidden relative shrink-0">
+                    <img 
+                      src={`${API_URL}${event.media_path}`} 
+                      alt="event thumbnail" 
+
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/45 flex items-center justify-center text-[9px] font-bold text-white">
+                      VIEW
+                    </div>
+                  </div>
+                )}
               </div>
-            )) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <CheckCircle size={32} className="mb-2 opacity-50" />
-                <p className="text-sm">No recent activity.</p>
-              </div>
+            ))}
+            {recentEvents.length === 0 && (
+              <div className="text-center py-10 text-security-500 text-sm">No recent events logged.</div>
             )}
           </div>
         </div>
 
+        {/* Recent SMS Alerts Sent Panel */}
+        <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-security-800">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <BellRing className="w-5 h-5 text-farm-400" />
+              <span>Dispatched SMS & Push Alerts</span>
+            </h3>
+            <span className="text-xs text-security-400">Logs database</span>
+          </div>
+
+          <div className="space-y-4">
+            {alerts.slice(0, 4).map(alert => (
+              <div 
+                key={alert.id}
+                className="p-4 bg-security-950/60 border border-security-850 rounded-lg flex items-start justify-between"
+              >
+                <div className="flex gap-3">
+                  <div className="p-2.5 bg-security-800 text-security-400 rounded-full">
+                    {alert.type === 'SMS' ? (
+                      <Smartphone className="w-5 h-5 text-farm-400" />
+                    ) : (
+                      <BellRing className="w-5 h-5 text-yellow-500" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold tracking-wider text-security-400 uppercase bg-security-800 px-2 py-0.5 rounded mr-2">
+                      {alert.type}
+                    </span>
+                    <span className="text-xs text-security-400">{formatTime(alert.timestamp)}</span>
+                    <p className="text-sm font-semibold text-security-200 mt-2">{alert.message}</p>
+                  </div>
+                </div>
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                  alert.status === 'Delivered' 
+                    ? 'bg-farm-900/60 text-farm-300 border border-farm-800/40' 
+                    : 'bg-yellow-950/40 text-yellow-300 border border-yellow-800/30'
+                }`}>
+                  {alert.status}
+                </span>
+              </div>
+            ))}
+            {alerts.length === 0 && (
+              <div className="text-center py-10 text-security-500 text-sm">No alerts sent recently.</div>
+            )}
+          </div>
+        </div>
+
+          </div>
+        </div>
       </div>
     </div>
   );
