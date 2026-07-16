@@ -13,7 +13,6 @@ import ZoneConfig from './components/ZoneConfig';
 import Settings from './components/Settings';
 import FaceManagement from './components/FaceManagement';
 import RFIDManagement from './components/RFIDManagement';
-import AttendanceLog from './components/AttendanceLog';
 import { API_URL, WS_URL } from './config';
 
 
@@ -257,7 +256,6 @@ export default function App() {
     { id: 'liveView', label: 'Live Camera', icon: Camera },
     { id: 'faces', label: 'Face Management', icon: Users },
     { id: 'rfid', label: 'RFID Management', icon: Key },
-    { id: 'attendance', label: 'Attendance Log', icon: Database },
     { id: 'events', label: 'Event Log', icon: Database },
     { id: 'alerts', label: 'SMS & Alerts', icon: Bell },
     { id: 'livestockMap', label: 'Livestock GPS', icon: Map },
@@ -587,7 +585,6 @@ void sendHeartbeat() {
               {activeTab === 'liveView' && <LiveView token={token} />}
               {activeTab === 'faces' && <FaceManagement token={token} />}
               {activeTab === 'rfid' && <RFIDManagement token={token} />}
-              {activeTab === 'attendance' && <AttendanceLog token={token} />}
               {activeTab === 'events' && <EventLog token={token} />}
               {activeTab === 'alerts' && <AlertLog token={token} alerts={alerts} fetchAlerts={fetchAlerts} />}
               {activeTab === 'livestockMap' && <LivestockMap token={token} />}
