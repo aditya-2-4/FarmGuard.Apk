@@ -70,11 +70,11 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
                 !online 
                   ? 'bg-security-800 text-security-500 cursor-not-allowed border border-security-800'
                   : deviceStatus?.is_armed === 1 
-                  ? 'bg-security-800 hover:bg-security-700 active:bg-security-900 text-security-300 border border-security-700' 
-                  : 'bg-farm-600 hover:bg-farm-500 text-white'
+                  ? 'bg-red-600 hover:bg-red-500 active:bg-red-700 text-white' 
+                  : 'bg-farm-600 hover:bg-farm-500 active:bg-farm-700 text-white'
               }`}
             >
-              {!online ? 'Device Offline' : toggleLoading ? 'Updating...' : (deviceStatus?.is_armed === 1 ? 'Disarm System' : 'Arm System')}
+              {!online ? 'Device Offline' : toggleLoading ? 'Updating...' : (deviceStatus?.is_armed === 1 ? 'Device Armed' : 'Device Disarmed')}
             </button>
           </div>
         </div>
@@ -134,18 +134,18 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
         <div className="bg-security-900 border border-security-800 rounded-xl p-6 shadow-xl flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-semibold uppercase tracking-wider text-security-400">Last Heartbeat</span>
-            <Clock className={`w-6 h-6 ${online ? 'text-farm-400' : 'text-red-500'}`} />
+            <Clock className={`w-6 h-6 ${(online && deviceStatus?.is_armed === 1) ? 'text-farm-400' : 'text-red-500'}`} />
           </div>
           <div>
             <h3 className="text-sm font-bold text-white mb-1 truncate">
-              {online ? (deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never') : 'N/A'}
+              {(online && deviceStatus?.is_armed === 1) ? (deviceStatus?.last_heartbeat ? new Date(deviceStatus.last_heartbeat).toLocaleTimeString() : 'Never') : 'Never'}
             </h3>
             <span className="text-xs text-security-400">
-              {online ? 'Device sending telemetry' : 'Heartbeat missing (Offline)'}
+              {(online && deviceStatus?.is_armed === 1) ? 'Device sending telemetry' : 'Heartbeat disabled (Disarmed/Offline)'}
             </span>
             <div className="flex items-center gap-1.5 mt-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${online ? 'bg-farm-400 animate-ping' : 'bg-red-500'}`}></span>
-              <span className="text-[10px] text-security-300 font-semibold">{online ? 'Connected' : 'Disconnected'}</span>
+              <span className={`w-2.5 h-2.5 rounded-full ${(online && deviceStatus?.is_armed === 1) ? 'bg-farm-400 animate-ping' : 'bg-red-500'}`}></span>
+              <span className="text-[10px] text-security-300 font-semibold">{(online && deviceStatus?.is_armed === 1) ? 'Connected' : 'Disconnected'}</span>
             </div>
           </div>
         </div>
