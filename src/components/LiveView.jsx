@@ -16,6 +16,17 @@ export default function LiveView({ token }) {
   // Reconnect logic
   const [retryCount, setRetryCount] = useState(0);
 
+  const extractIp = (url) => {
+    try {
+      const match = url.match(/:\/\/([^\/:]+)/);
+      return match ? match[1] : url;
+    } catch {
+      return url;
+    }
+  };
+
+  const [ipInput, setIpInput] = useState(() => extractIp(streamUrl));
+
   useEffect(() => {
     // Attempt to connect to stream when URL changes or retry occurs
     setStreamError(false);
@@ -43,7 +54,18 @@ export default function LiveView({ token }) {
   };
 
   const handleSaveUrl = () => {
-    localStorage.setItem('mjpeg_stream_url', streamUrl);
+    let input = ipInput.trim();
+    let newUrl = '';
+    
+    // Automatically extract the IP and build the stream URL
+    let ip = input;
+    if (ip.startsWith('http://')) ip = ip.replace('http://', '');
+    if (ip.startsWith('https://')) ip = ip.replace('https://', '');
+    ip = ip.split(':')[0].split('/')[0];
+    newUrl = `http://${ip}:81/stream`;
+    
+    setStreamUrl(newUrl);
+    localStorage.setItem('mjpeg_stream_url', newUrl);
     setSavedUrl(true);
     setRetryCount(prev => prev + 1); // Trigger reconnection
     setTimeout(() => setSavedUrl(false), 2000);
@@ -210,10 +232,10 @@ export default function LiveView({ token }) {
           <div className="flex gap-3">
             <input 
               type="text" 
-              value={streamUrl}
-              onChange={e => setStreamUrl(e.target.value)}
+              value={ipInput}
+              onChange={e => setIpInput(e.target.value)}
               className="flex-1 bg-[#050a06] border border-gray-700 focus:border-emerald-500 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 outline-none"
-              placeholder="http://ip_address:81/stream"
+              placeholder="Paste IP address here (e.g. 192.168.4.1)"
             />
             <button 
               onClick={handleSaveUrl}
