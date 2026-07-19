@@ -141,9 +141,17 @@ export default function App() {
     };
 
     ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
+      // Handle binary JPEG frame from backend multiplexer
+      if (event.data instanceof Blob) {
+        const url = URL.createObjectURL(event.data);
+        window.dispatchEvent(new CustomEvent('camera-frame', { detail: url }));
+        return;
+      }
 
-      if (msg.type === 'STATUS_UPDATE' || msg.type === 'DEVICE_HEARTBEAT') {
+      try {
+        const msg = JSON.parse(event.data);
+  
+        if (msg.type === 'STATUS_UPDATE' || msg.type === 'DEVICE_HEARTBEAT') {
         if (msg.device) setDeviceStatus(msg.device);
         if (msg.recentEvents) setRecentEvents(msg.recentEvents);
       }
@@ -199,7 +207,10 @@ export default function App() {
       if (msg.type === 'ALERT_RESENT') {
         setAlerts(prev => [msg.alert, ...prev]);
       }
-    };
+    } catch (err) {
+      console.error('WebSocket parsing error:', err);
+    }
+  };
 
     ws.onclose = () => {
       setTimeout(connectWebSocket, 5000);

@@ -35,68 +35,29 @@ export default function LiveView({ token, deviceStatus }) {
     setStreamError(false);
     setIsStreaming(true); // Optimistic UI
     
-    let abortController = new AbortController();
-
-    const fetchMjpeg = async () => {
-      try {
-        const response = await fetch(streamUrl, {
-          headers: { 'Bypass-Tunnel-Reminder': 'true' },
-          signal: abortController.signal
-        });
-        
-        if (!response.ok) throw new Error('Stream failed');
-
-        const reader = response.body.getReader();
-        let buffer = new Uint8Array(0);
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          let newBuffer = new Uint8Array(buffer.length + value.length);
-          newBuffer.set(buffer);
-          newBuffer.set(value, buffer.length);
-          buffer = newBuffer;
-
-          let start = -1;
-          let end = -1;
-          for (let i = 0; i < buffer.length - 1; i++) {
-            if (buffer[i] === 0xff && buffer[i+1] === 0xd8) start = i;
-            if (buffer[i] === 0xff && buffer[i+1] === 0xd9 && start !== -1) {
-              end = i + 2;
-              break;
-            }
-          }
-
-          if (start !== -1 && end !== -1) {
-            const frame = buffer.slice(start, end);
-            const blob = new Blob([frame], { type: 'image/jpeg' });
-            const url = URL.createObjectURL(blob);
-            setBlobUrl(oldUrl => {
-              if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
-              return url;
-            });
-            buffer = buffer.slice(end);
-          }
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-          handleStreamError();
-        }
-      }
+    // Listen for WebSocket proxied frames from App.jsx
+    const handleFrame = (e) => {
+      setBlobUrl(oldUrl => {
+        if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+        return e.detail; // New blob URL
+      });
+      setIsStreaming(true);
+      setStreamError(false);
     };
 
-    if (streamUrl.includes('loca.lt')) {
-      fetchMjpeg();
-    } else {
+    window.addEventListener('camera-frame', handleFrame);
+    
+    // If it's a local LAN URL, fallback to direct img src
+    if (!streamUrl.includes('loca.lt')) {
       const currentUrl = `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
       if (imgRef.current) {
         imgRef.current.src = currentUrl;
       }
     }
 
-    return () => abortController.abort();
+    return () => {
+      window.removeEventListener('camera-frame', handleFrame);
+    };
   }, [streamUrl, retryCount]);
 
   const handleStreamError = () => {
