@@ -50,12 +50,23 @@ export default function LiveView({ token, deviceStatus }) {
       }
     };
 
-    window.addEventListener('camera-frame', handleFrame);
+    const isLocal = !streamUrl.includes('loca.lt') && !streamUrl.includes('ngrok') && !streamUrl.includes('pinggy') && !streamUrl.startsWith('https://');
+    
+    if (isLocal) {
+      // Direct connection to local IP bypasses the cloud proxy
+      if (imgRef.current) {
+        imgRef.current.src = `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      }
+    } else {
+      window.addEventListener('camera-frame', handleFrame);
+    }
 
     return () => {
       window.removeEventListener('camera-frame', handleFrame);
     };
   }, [streamUrl, retryCount]);
+
+  const isLocalIp = !streamUrl.includes('loca.lt') && !streamUrl.includes('ngrok') && !streamUrl.includes('pinggy') && !streamUrl.startsWith('https://');
 
   const handleStreamError = () => {
     setIsStreaming(false);
@@ -170,9 +181,15 @@ export default function LiveView({ token, deviceStatus }) {
           </div>
         )}
 
+        {isLocalIp && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black px-4 py-2 rounded-lg font-bold text-sm shadow-xl z-20 flex items-center gap-2">
+            ⚠️ Local IP Detected (Direct Connection)
+          </div>
+        )}
+
         <img 
           ref={imgRef}
-          src=""
+          src={isLocalIp ? undefined : ""}
           onError={handleStreamError}
           onLoad={handleStreamLoad}
           alt="Live Camera Stream"
