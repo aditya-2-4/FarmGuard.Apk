@@ -582,7 +582,7 @@ void sendHeartbeat() {
                   online={online}
                 />
               )}
-              {activeTab === 'liveView' && <LiveView token={token} />}
+              {activeTab === 'liveView' && <LiveView token={token} deviceStatus={deviceStatus} />}
               {activeTab === 'faces' && <FaceManagement token={token} />}
               {activeTab === 'rfid' && <RFIDManagement token={token} />}
               {activeTab === 'events' && <EventLog token={token} />}

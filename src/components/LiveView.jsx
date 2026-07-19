@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Maximize, Settings, ShieldAlert, Sliders, Play, Check, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
-export default function LiveView({ token }) {
-  const [streamUrl, setStreamUrl] = useState(localStorage.getItem('mjpeg_stream_url') || 'http://192.168.1.100:81/stream');
+import { API_URL } from '../config';
+
+export default function LiveView({ token, deviceStatus }) {
+  const [streamUrl, setStreamUrl] = useState(deviceStatus?.stream_url || localStorage.getItem('mjpeg_stream_url') || 'http://192.168.1.100:81/stream');
   const [savedUrl, setSavedUrl] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
@@ -111,7 +113,13 @@ export default function LiveView({ token }) {
     setRetryCount(prev => prev + 1);
   };
 
-  const handleSaveUrl = () => {
+  useEffect(() => {
+    if (deviceStatus?.stream_url && deviceStatus.stream_url !== streamUrl) {
+      setStreamUrl(deviceStatus.stream_url);
+    }
+  }, [deviceStatus?.stream_url]);
+
+  const handleSaveUrl = async () => {
     let input = ipInput.trim();
     let newUrl = '';
     
@@ -127,6 +135,20 @@ export default function LiveView({ token }) {
     
     setStreamUrl(newUrl);
     localStorage.setItem('mjpeg_stream_url', newUrl);
+    
+    try {
+      await fetch(`${API_URL}/api/device/stream-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ stream_url: newUrl })
+      });
+    } catch (err) {
+      console.error('Failed to sync stream URL to backend:', err);
+    }
+
     setSavedUrl(true);
     setRetryCount(prev => prev + 1); // Trigger reconnection
     setTimeout(() => setSavedUrl(false), 2000);
