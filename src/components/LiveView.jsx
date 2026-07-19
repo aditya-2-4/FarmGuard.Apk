@@ -12,6 +12,7 @@ export default function LiveView({ token }) {
   const imgRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [capturedImage, setCapturedImage] = useState(null);
+  const [blobUrl, setBlobUrl] = useState('');
   
   // Reconnect logic
   const [retryCount, setRetryCount] = useState(0);
@@ -32,11 +33,68 @@ export default function LiveView({ token }) {
     setStreamError(false);
     setIsStreaming(true); // Optimistic UI
     
-    // Add unique query parameter to bypass browser cache
-    const currentUrl = `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-    if (imgRef.current) {
-      imgRef.current.src = currentUrl;
+    let abortController = new AbortController();
+
+    const fetchMjpeg = async () => {
+      try {
+        const response = await fetch(streamUrl, {
+          headers: { 'Bypass-Tunnel-Reminder': 'true' },
+          signal: abortController.signal
+        });
+        
+        if (!response.ok) throw new Error('Stream failed');
+
+        const reader = response.body.getReader();
+        let buffer = new Uint8Array(0);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          let newBuffer = new Uint8Array(buffer.length + value.length);
+          newBuffer.set(buffer);
+          newBuffer.set(value, buffer.length);
+          buffer = newBuffer;
+
+          let start = -1;
+          let end = -1;
+          for (let i = 0; i < buffer.length - 1; i++) {
+            if (buffer[i] === 0xff && buffer[i+1] === 0xd8) start = i;
+            if (buffer[i] === 0xff && buffer[i+1] === 0xd9 && start !== -1) {
+              end = i + 2;
+              break;
+            }
+          }
+
+          if (start !== -1 && end !== -1) {
+            const frame = buffer.slice(start, end);
+            const blob = new Blob([frame], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            setBlobUrl(oldUrl => {
+              if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+              return url;
+            });
+            buffer = buffer.slice(end);
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          handleStreamError();
+        }
+      }
+    };
+
+    if (streamUrl.includes('loca.lt')) {
+      fetchMjpeg();
+    } else {
+      const currentUrl = `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      if (imgRef.current) {
+        imgRef.current.src = currentUrl;
+      }
     }
+
+    return () => abortController.abort();
   }, [streamUrl, retryCount]);
 
   const handleStreamError = () => {
@@ -58,11 +116,14 @@ export default function LiveView({ token }) {
     let newUrl = '';
     
     // Automatically extract the IP and build the stream URL
-    let ip = input;
-    if (ip.startsWith('http://')) ip = ip.replace('http://', '');
-    if (ip.startsWith('https://')) ip = ip.replace('https://', '');
-    ip = ip.split(':')[0].split('/')[0];
-    newUrl = `http://${ip}:81/stream`;
+    // If it's a full URL (like ngrok/localtunnel), just use it
+    if (input.startsWith('http://') || input.startsWith('https://')) {
+      newUrl = input.endsWith('/stream') ? input : `${input}/stream`;
+    } else {
+      let ip = input;
+      ip = ip.split(':')[0].split('/')[0];
+      newUrl = `http://${ip}:81/stream`;
+    }
     
     setStreamUrl(newUrl);
     localStorage.setItem('mjpeg_stream_url', newUrl);
@@ -74,14 +135,19 @@ export default function LiveView({ token }) {
   const handleCaptureSnapshot = () => {
     if (!isStreaming || streamError || !imgRef.current) return;
     
-    // Draw current image onto a temporary canvas to get a base64 snapshot
-    const canvas = document.createElement('canvas');
-    canvas.width = imgRef.current.naturalWidth || 800;
-    canvas.height = imgRef.current.naturalHeight || 600;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(imgRef.current, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    setCapturedImage(dataUrl);
+    try {
+      // Draw current image onto a temporary canvas to get a base64 snapshot
+      const canvas = document.createElement('canvas');
+      canvas.width = imgRef.current.naturalWidth || 800;
+      canvas.height = imgRef.current.naturalHeight || 600;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgRef.current, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setCapturedImage(dataUrl);
+    } catch (err) {
+      console.error('Snapshot failed (CORS Error):', err);
+      alert('Snapshot feature is unavailable due to browser security restrictions on the camera stream.');
+    }
   };
 
   const toggleFullscreen = () => {
@@ -126,7 +192,7 @@ export default function LiveView({ token }) {
 
         <img 
           ref={imgRef}
-          crossOrigin="anonymous"
+          src={streamUrl.includes('loca.lt') ? blobUrl : undefined}
           onError={handleStreamError}
           onLoad={handleStreamLoad}
           alt="Live Camera Stream"
