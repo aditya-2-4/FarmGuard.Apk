@@ -51,14 +51,6 @@ export default function LiveView({ token, deviceStatus }) {
     };
 
     window.addEventListener('camera-frame', handleFrame);
-    
-    // If it's a local LAN URL, fallback to direct img src
-    if (!streamUrl.includes('loca.lt')) {
-      const currentUrl = `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      if (imgRef.current) {
-        imgRef.current.src = currentUrl;
-      }
-    }
 
     return () => {
       window.removeEventListener('camera-frame', handleFrame);
@@ -180,7 +172,7 @@ export default function LiveView({ token, deviceStatus }) {
 
         <img 
           ref={imgRef}
-          src={!streamUrl.includes('loca.lt') ? `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}` : undefined}
+          src=""
           onError={handleStreamError}
           onLoad={handleStreamLoad}
           alt="Live Camera Stream"
