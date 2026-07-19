@@ -181,12 +181,6 @@ export default function LiveView({ token, deviceStatus }) {
           </div>
         )}
 
-        {isLocalIp && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-yellow-500/90 text-black px-4 py-2 rounded-lg font-bold text-sm shadow-xl z-20 flex items-center gap-2">
-            ⚠️ Local IP Detected (Direct Connection)
-          </div>
-        )}
-
         <img 
           ref={imgRef}
           src={isLocalIp ? undefined : ""}
