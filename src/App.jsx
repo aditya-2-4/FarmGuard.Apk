@@ -142,8 +142,9 @@ export default function App() {
 
     ws.onmessage = (event) => {
       // Handle binary JPEG frame from backend multiplexer
-      if (event.data instanceof Blob) {
-        const url = URL.createObjectURL(event.data);
+      if (typeof event.data !== 'string') {
+        const blob = event.data instanceof Blob ? event.data : new Blob([event.data], { type: 'image/jpeg' });
+        const url = URL.createObjectURL(blob);
         window.dispatchEvent(new CustomEvent('camera-frame', { detail: url }));
         return;
       }

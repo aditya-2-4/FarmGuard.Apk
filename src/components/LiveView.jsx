@@ -37,12 +37,17 @@ export default function LiveView({ token, deviceStatus }) {
     
     // Listen for WebSocket proxied frames from App.jsx
     const handleFrame = (e) => {
-      setBlobUrl(oldUrl => {
-        if (oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
-        return e.detail; // New blob URL
-      });
-      setIsStreaming(true);
-      setStreamError(false);
+      if (imgRef.current) {
+        if (imgRef.current.dataset.blobUrl) {
+          URL.revokeObjectURL(imgRef.current.dataset.blobUrl);
+        }
+        imgRef.current.src = e.detail;
+        imgRef.current.dataset.blobUrl = e.detail;
+      }
+      if (!isStreaming) {
+        setIsStreaming(true);
+        setStreamError(false);
+      }
     };
 
     window.addEventListener('camera-frame', handleFrame);
@@ -175,7 +180,7 @@ export default function LiveView({ token, deviceStatus }) {
 
         <img 
           ref={imgRef}
-          src={streamUrl.includes('loca.lt') ? blobUrl : undefined}
+          src={!streamUrl.includes('loca.lt') ? `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}` : undefined}
           onError={handleStreamError}
           onLoad={handleStreamLoad}
           alt="Live Camera Stream"
