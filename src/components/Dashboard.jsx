@@ -70,8 +70,8 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
                 !online 
                   ? 'bg-security-800 text-security-500 cursor-not-allowed border border-security-800'
                   : deviceStatus?.is_armed === 1 
-                  ? 'bg-red-600 hover:bg-red-500 active:bg-red-700 text-white' 
-                  : 'bg-farm-600 hover:bg-farm-500 active:bg-farm-700 text-white'
+                  ? 'bg-farm-600 hover:bg-farm-500 active:bg-farm-700 text-white' 
+                  : 'bg-red-600 hover:bg-red-500 active:bg-red-700 text-white'
               }`}
             >
               {!online ? 'Device Offline' : toggleLoading ? 'Updating...' : (deviceStatus?.is_armed === 1 ? 'Device Armed' : 'Device Disarmed')}
@@ -152,19 +152,29 @@ export default function Dashboard({ deviceStatus, recentEvents, alerts, token, f
 
       </div>
 
-      {/* Strict Offline Masking for Data Panels */}
+      {/* Strict Offline/Disarmed Masking for Data Panels */}
       <div className="relative">
-        {!online && (
+        {(!online || deviceStatus?.is_armed !== 1) && (
           <div className="absolute inset-0 z-10 bg-security-950/70 backdrop-blur-[6px] rounded-2xl flex flex-col items-center justify-center border border-security-800">
             <div className="bg-security-900 border border-security-700 p-6 rounded-xl shadow-2xl flex flex-col items-center max-w-sm text-center">
-              <Radio className="w-10 h-10 text-red-500 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Telemetry Offline</h3>
-              <p className="text-xs text-security-400">All data widgets, charts, and activity logs are strictly disabled until the ESP32 gateway reconnects.</p>
+              {!online ? (
+                <>
+                  <Radio className="w-10 h-10 text-red-500 mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">Telemetry Offline</h3>
+                  <p className="text-xs text-security-400">All data widgets, charts, and activity logs are strictly disabled until the ESP32 gateway reconnects.</p>
+                </>
+              ) : (
+                <>
+                  <ShieldOff className="w-10 h-10 text-yellow-500 mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">System Disarmed</h3>
+                  <p className="text-xs text-security-400">Live data tracking and telemetry are hidden while the system is disarmed.</p>
+                </>
+              )}
             </div>
           </div>
         )}
 
-        <div className={`transition-all ${!online ? 'opacity-30 pointer-events-none select-none filter grayscale' : ''}`}>
+        <div className={`transition-all ${(!online || deviceStatus?.is_armed !== 1) ? 'opacity-30 pointer-events-none select-none filter grayscale' : ''}`}>
           {/* Grid of recent Event Logs & Alerts logs */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         

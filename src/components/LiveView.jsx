@@ -50,23 +50,14 @@ export default function LiveView({ token, deviceStatus }) {
       }
     };
 
-    const isLocal = !streamUrl.includes('loca.lt') && !streamUrl.includes('ngrok') && !streamUrl.includes('pinggy') && !streamUrl.startsWith('https://');
-    
-    if (isLocal) {
-      // Direct connection to local IP bypasses the cloud proxy
-      if (imgRef.current) {
-        imgRef.current.src = `${streamUrl}${streamUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
-      }
-    } else {
-      window.addEventListener('camera-frame', handleFrame);
-    }
+    window.addEventListener('camera-frame', handleFrame);
 
     return () => {
       window.removeEventListener('camera-frame', handleFrame);
     };
   }, [streamUrl, retryCount]);
 
-  const isLocalIp = !streamUrl.includes('loca.lt') && !streamUrl.includes('ngrok') && !streamUrl.includes('pinggy') && !streamUrl.startsWith('https://');
+
 
   const handleStreamError = () => {
     setIsStreaming(false);
@@ -183,7 +174,7 @@ export default function LiveView({ token, deviceStatus }) {
 
         <img 
           ref={imgRef}
-          src={isLocalIp ? undefined : ""}
+          src=""
           onError={handleStreamError}
           onLoad={handleStreamLoad}
           alt="Live Camera Stream"

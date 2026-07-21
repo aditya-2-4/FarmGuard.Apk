@@ -42,7 +42,8 @@ export default function EventLog({ token }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setEvents(data);
+        const cutoff = new Date('2026-07-21T17:00:00Z');
+        setEvents(data.filter(e => new Date(e.timestamp) >= cutoff));
       }
     } catch (e) {
       console.error(e);
