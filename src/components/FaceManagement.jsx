@@ -89,13 +89,24 @@ export default function FaceManagement({ token }) {
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Face Management</h1>
           <p className="text-gray-400">Register and manage authorized personnel faces.</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-semibold transition-colors shadow-lg shadow-emerald-900/20"
-        >
-          <Plus size={20} />
-          <span>Register New Face</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <a
+            href={`${API_URL}/enroll`}
+            target="_blank"
+            rel="noreferrer"
+            className="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 border border-emerald-600/50 px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-colors shadow-md"
+          >
+            <Camera size={18} />
+            <span>Open Face Enrollment Portal</span>
+          </a>
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-semibold transition-colors shadow-lg shadow-emerald-900/20"
+          >
+            <Plus size={20} />
+            <span>Register New Face</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-[#121a14] rounded-xl border border-gray-800 shadow-xl flex-1 overflow-hidden flex flex-col">
