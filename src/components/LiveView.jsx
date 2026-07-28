@@ -4,7 +4,7 @@ import { Camera, Maximize, Settings, ShieldAlert, Sliders, Play, Check, ZoomIn, 
 import { API_URL } from '../config';
 
 export default function LiveView({ token, deviceStatus }) {
-  const [streamUrl, setStreamUrl] = useState(deviceStatus?.stream_url || localStorage.getItem('mjpeg_stream_url') || 'http://192.168.1.100:81/stream');
+  const [streamUrl, setStreamUrl] = useState(deviceStatus?.stream_url || localStorage.getItem('mjpeg_stream_url') || 'http://10.14.51.170/cam-lo.jpg');
   const [savedUrl, setSavedUrl] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
@@ -15,6 +15,7 @@ export default function LiveView({ token, deviceStatus }) {
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [capturedImage, setCapturedImage] = useState(null);
   const [blobUrl, setBlobUrl] = useState('');
+  const [aiDetections, setAiDetections] = useState([]);
   
   // Reconnect logic
   const [retryCount, setRetryCount] = useState(0);
@@ -50,10 +51,18 @@ export default function LiveView({ token, deviceStatus }) {
       }
     };
 
+    const handleAiUpdate = (e) => {
+      if (e.detail && Array.isArray(e.detail.detections)) {
+        setAiDetections(e.detail.detections);
+      }
+    };
+
     window.addEventListener('camera-frame', handleFrame);
+    window.addEventListener('ai-detection-update', handleAiUpdate);
 
     return () => {
       window.removeEventListener('camera-frame', handleFrame);
+      window.removeEventListener('ai-detection-update', handleAiUpdate);
     };
   }, [streamUrl, retryCount]);
 
@@ -208,14 +217,25 @@ export default function LiveView({ token, deviceStatus }) {
           </button>
         </div>
 
-        {/* Status Indicator */}
-        <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-          <div className="bg-[#050a06]/80 px-3 py-1.5 rounded-lg border border-[#1a241c] backdrop-blur flex items-center gap-2">
+        {/* Status Indicator & Live AI Detections */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+          <div className="bg-[#050a06]/80 px-3 py-1.5 rounded-lg border border-[#1a241c] backdrop-blur flex items-center gap-2 w-max">
             <span className={`w-2.5 h-2.5 rounded-full ${streamError ? 'bg-red-500' : 'bg-emerald-500 animate-ping'}`}></span>
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              {streamError ? 'OFFLINE' : 'LIVE'}
+              {streamError ? 'OFFLINE' : 'LIVE CAMERA (10.14.51.170)'}
             </span>
           </div>
+
+          {aiDetections.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 max-w-xs">
+              {aiDetections.map((det, idx) => (
+                <div key={idx} className="bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2.5 py-1 rounded-md text-xs font-bold shadow-lg flex items-center gap-1.5 backdrop-blur">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>{det.label} ({(det.confidence * 100).toFixed(0)}%)</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* HUD Overlay */}
