@@ -167,6 +167,7 @@ export default function LiveView({ token, deviceStatus }) {
         ref={containerRef}
         className="relative bg-black rounded-xl overflow-hidden border border-[#1a241c] shadow-2xl aspect-video w-full flex items-center justify-center"
       >
+        {/* Stream Disconnected View */}
         {!isStreaming && streamError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050a06] z-0">
             <Camera className="w-16 h-16 text-gray-700 mb-4" />
@@ -181,13 +182,22 @@ export default function LiveView({ token, deviceStatus }) {
           </div>
         )}
 
+        {/* Stream Initializing / Connecting Loader */}
+        {!streamError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050a06] z-0">
+            <Camera className="w-12 h-12 text-emerald-500 mb-3 animate-pulse" />
+            <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider">Connecting Camera Stream...</h4>
+            <p className="text-xs text-gray-500 mt-1 font-mono">{extractIp(streamUrl)}</p>
+          </div>
+        )}
+
         <img 
           ref={imgRef}
           src=""
           onError={handleStreamError}
           onLoad={handleStreamLoad}
-          alt="Live Camera Stream"
-          className="w-full h-full object-contain"
+          alt=""
+          className="w-full h-full object-contain relative z-1"
           style={{ 
             transform: `scale(${zoomLevel})`,
             transformOrigin: 'center center',
@@ -222,7 +232,7 @@ export default function LiveView({ token, deviceStatus }) {
           <div className="bg-[#050a06]/80 px-3 py-1.5 rounded-lg border border-[#1a241c] backdrop-blur flex items-center gap-2 w-max">
             <span className={`w-2.5 h-2.5 rounded-full ${streamError ? 'bg-red-500' : 'bg-emerald-500 animate-ping'}`}></span>
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              {streamError ? 'OFFLINE' : 'LIVE CAMERA (10.14.51.170)'}
+              {streamError ? 'OFFLINE' : `LIVE STREAM (${extractIp(streamUrl)})`}
             </span>
           </div>
 
