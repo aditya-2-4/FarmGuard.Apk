@@ -54,8 +54,13 @@ export default function LiveView({ token, deviceStatus }) {
     };
 
     const handleAiUpdate = (e) => {
-      if (e.detail && Array.isArray(e.detail.detections)) {
-        setAiDetections(e.detail.detections);
+      if (e.detail) {
+        if (Array.isArray(e.detail.detections)) {
+          setAiDetections(e.detail.detections);
+        }
+        if (e.detail.annotated_url && imgRef.current) {
+          imgRef.current.src = e.detail.annotated_url;
+        }
       }
     };
 
