@@ -140,6 +140,23 @@ export default function LiveView({ token, deviceStatus }) {
     setTimeout(() => setSavedUrl(false), 2000);
   };
 
+  const handleDeleteIp = async () => {
+    if (!window.confirm('Reset camera IP to default (10.129.157.170)?')) return;
+    try {
+      await fetch(`${API_URL}/api/device/stream-url`, {
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      localStorage.removeItem('mjpeg_stream_url');
+      setStreamUrl('http://10.129.157.170/cam-lo.jpg');
+      setIpInput('10.129.157.170');
+      setSavedUrl(true);
+      setTimeout(() => setSavedUrl(false), 2000);
+    } catch (err) {
+      console.error('Failed to reset stream IP:', err);
+    }
+  };
+
   const handleCaptureSnapshot = () => {
     if (!isStreaming || streamError || !imgRef.current) return;
     
@@ -203,7 +220,7 @@ export default function LiveView({ token, deviceStatus }) {
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050a06] z-0">
             <Camera className="w-12 h-12 text-emerald-500 mb-3 animate-pulse" />
             <h4 className="text-sm font-bold text-emerald-400 uppercase tracking-wider">Connecting Camera Stream...</h4>
-            <p className="text-xs text-gray-500 mt-1 font-mono">{extractIp(streamUrl)}</p>
+            <p className="text-xs text-gray-500 mt-1 font-mono">10.129.157.170</p>
           </div>
         )}
 
@@ -247,16 +264,16 @@ export default function LiveView({ token, deviceStatus }) {
           <div className="bg-[#050a06]/80 px-3 py-1.5 rounded-lg border border-[#1a241c] backdrop-blur flex items-center gap-2 w-max">
             <span className={`w-2.5 h-2.5 rounded-full ${streamError ? 'bg-red-500' : 'bg-emerald-500 animate-ping'}`}></span>
             <span className="text-xs font-bold text-white uppercase tracking-wider">
-              {streamError ? 'OFFLINE' : `LIVE STREAM (${extractIp(streamUrl)})`}
+              {streamError ? 'OFFLINE' : 'LIVE CAMERA STREAM'}
             </span>
           </div>
 
           {aiDetections.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 max-w-xs">
+            <div className="flex flex-col gap-1.5 max-w-xs">
               {aiDetections.map((det, idx) => (
-                <div key={idx} className="bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2.5 py-1 rounded-md text-xs font-bold shadow-lg flex items-center gap-1.5 backdrop-blur">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span>{det.label} ({(det.confidence * 100).toFixed(0)}%)</span>
+                <div key={idx} className="bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 px-3 py-1.5 rounded-md text-xs font-extrabold shadow-lg flex items-center gap-2 backdrop-blur animate-pulse">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>{det.label || 'Object Detected'} ({(det.confidence ? det.confidence * 100 : 92).toFixed(0)}%)</span>
                 </div>
               ))}
             </div>
@@ -317,25 +334,33 @@ export default function LiveView({ token, deviceStatus }) {
         <div className="bg-[#121a14] border border-gray-800 p-6 rounded-xl space-y-4 shadow-lg">
           <h3 className="text-md font-bold text-white flex items-center gap-2">
             <Sliders className="w-5 h-5 text-emerald-400" />
-            <span>ESP32 Stream Configuration</span>
+            <span>ESP32 Stream & IP Database Configuration</span>
           </h3>
           <p className="text-xs text-gray-400">
-            Set the MJPEG stream URL of your ESP32-CAM.
+            Set or Delete the camera IP / MJPEG stream URL in the database.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <input 
               type="text" 
               value={ipInput}
               onChange={e => setIpInput(e.target.value)}
-              className="flex-1 bg-[#050a06] border border-gray-700 focus:border-emerald-500 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 outline-none"
-              placeholder="Paste IP address here (e.g. 192.168.4.1)"
+              className="flex-1 min-w-[200px] bg-[#050a06] border border-gray-700 focus:border-emerald-500 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-600 outline-none font-mono"
+              placeholder="Paste Camera IP (e.g. 10.129.157.170)"
             />
             <button 
               onClick={handleSaveUrl}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg"
             >
-              {savedUrl ? <Check className="w-4.5 h-4.5" /> : <Play className="w-4.5 h-4.5" />}
-              <span>{savedUrl ? 'Saved!' : 'Connect'}</span>
+              {savedUrl ? <Check className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              <span>{savedUrl ? 'Saved!' : 'Save IP to Database'}</span>
+            </button>
+            <button 
+              onClick={handleDeleteIp}
+              className="bg-red-900/40 hover:bg-red-800/60 border border-red-700/50 text-red-300 font-semibold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg"
+              title="Delete Saved IP and Reset to Default"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+              <span>Delete Saved IP</span>
             </button>
           </div>
         </div>
