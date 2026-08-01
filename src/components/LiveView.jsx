@@ -4,7 +4,7 @@ import { Camera, Maximize, Settings, ShieldAlert, Sliders, Play, Check, ZoomIn, 
 import { API_URL } from '../config';
 
 export default function LiveView({ token, deviceStatus }) {
-  const [streamUrl, setStreamUrl] = useState(deviceStatus?.stream_url || localStorage.getItem('mjpeg_stream_url') || 'http://10.14.51.170/cam-lo.jpg');
+  const [streamUrl, setStreamUrl] = useState(deviceStatus?.stream_url || localStorage.getItem('mjpeg_stream_url') || 'http://10.129.157.170/cam-lo.jpg');
   const [savedUrl, setSavedUrl] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
